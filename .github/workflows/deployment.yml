@@ -1,0 +1,99 @@
+name: Deployment Workflow
+on:
+  workflow_call:
+    inputs:
+      disable-consistency-check:
+        default: false
+        type: boolean
+        description: Disable consistency check
+      payload:
+        default: ''
+        required: false
+        type: string
+      built_repo:
+        default: ''
+        required: false
+        type: string
+      built_branch:
+        default: ''
+        required: false
+        type: string
+      deploy_method:
+        default: 'ssh'
+        required: false
+        type: string
+
+jobs:
+  deploy:
+    name: Build & Deploy
+    if: "! contains( github.event.head_commit.message, '[skip deploy]' )"
+    runs-on: ubuntu-latest
+    concurrency: reusable-deployment-${{ github.ref_name }}
+    env:
+      action:      'maintenance-deploy'
+      queue_id:    ${{ ( inputs.payload != '' && fromJson( inputs.payload ).queue_id ) || '' }}
+      sapp_server: ${{ vars.SAPP_SERVER || 'maintenance.saucal.com' }}
+      deploy_method: ${{ inputs.deploy_method }}
+      
+    steps:
+      - name: Prepare
+        uses: saucal/action-bundle-prepare@v4
+        with:
+          slack-token: ${{ secrets.SLACK_CI_BOT_TOKEN }}
+          slack-channel: ${{ secrets.SLACK_CHANNEL || vars.SLACK_CHANNEL || secrets.SLACK_DEFAULT_CHANNEL || vars.SLACK_DEFAULT_CHANNEL || secrets.SLACK_MAINTENANCE_FEED_CHANNEL || vars.SLACK_MAINTENANCE_FEED_CHANNEL }}
+          git-token: ${{ secrets.CI_BOT_TOKEN || secrets.github_token }}
+          repo: "${{ ( inputs.built_repo != '' && inputs.built_repo ) || 'current-built' }}"
+          branch: "${{ ( inputs.built_branch != '' && inputs.built_branch ) || format( '{0}-built', github.ref_name ) }}"
+          mu-plugins-branch: ${{ vars.MU_PLUGINS_BRANCH || 'v2' }}
+          mu-plugins-loader-branch: ${{ vars.MU_PLUGINS_LOADER_BRANCH || 'v1' }}
+
+      - name: Build
+        uses: saucal/action-build@v3
+        with:
+          path: "source"
+          node_version: ${{ vars.NODE_VERSION || '16' }}
+          php_version: ${{ vars.PHP_VERSION || 'latest' }}
+          php_extensions: ${{ vars.PHP_EXTENSIONS || 'mbstring' }}
+          composer_version: ${{ vars.COMPOSER_VERSION || 'v2' }}
+          satis_key: ${{ secrets.SAUCAL_SATIS_KEY || secrets.SAUCAL_GLOBAL_SATIS_KEY }}
+
+      - name: Push to SSH
+        if: ${{ env.deploy_method == 'ssh' }}
+        uses: saucal/action-bundle-push-to-ssh@v4
+        env:
+          ENV_PREFIX: ${{ ( ( github.ref_name == 'main' || github.ref_name == 'master' || github.ref_name == 'production' ) && 'PRODUCTION' ) || ( github.ref_name == 'preprod' && 'PREPROD' ) || ( ( github.ref_name == 'develop' || github.ref_name == 'staging' ) && 'STAGING' ) || format( 'ENV_{0}', github.ref_name ) }}
+        with:
+          env-host: ${{ secrets[ format( '{0}_SSH_HOST', env.ENV_PREFIX ) ] || vars[ format( '{0}_SSH_HOST', env.ENV_PREFIX ) ] }}
+          # Keep only pass or key.
+          env-pass: ${{ secrets[ format( '{0}_SSH_PASS', env.ENV_PREFIX ) ] || '' }}
+          env-key: ${{ secrets[ format( '{0}_SSH_KEY', env.ENV_PREFIX ) ] || '' }}
+          env-user: ${{ secrets[ format( '{0}_SSH_USER', env.ENV_PREFIX ) ] || vars[ format( '{0}_SSH_USER', env.ENV_PREFIX ) ] }}
+          env-port: ${{ secrets[ format( '{0}_SSH_PORT', env.ENV_PREFIX ) ] || vars[ format( '{0}_SSH_PORT', env.ENV_PREFIX ) ] || 22 }}
+          env-local-root: ${{ secrets[ format( '{0}_LOCAL_ROOT', env.ENV_PREFIX ) ] || vars[ format( '{0}_LOCAL_ROOT', env.ENV_PREFIX ) ] || vars.SSH_LOCAL_ROOT || '' }}
+          env-remote-root: ${{ secrets[ format( '{0}_REMOTE_ROOT', env.ENV_PREFIX ) ] || vars[ format( '{0}_REMOTE_ROOT', env.ENV_PREFIX ) ] }}
+          disable-consistency-check: ${{ inputs.disable-consistency-check || '' }}
+          force-ignore: ${{ vars.BUILD_IGNORE_LIST || vars.FORCE_IGNORE_LIST || '' }}
+          ssh-ignore: ${{ vars.SSH_IGNORE_LIST || 'false' }}  # needs to be a string
+          ssh-ignore-extra: ${{ vars.SSH_IGNORE_LIST_EXTRA || 'false' }}  # needs to be a string
+          ssh-flags: ${{ vars.SSH_FLAGS || '' }}
+          ssh-shell-params: ${{ vars.SSH_SHELL_PARAMS || '' }}
+          ssh-extra-options: ${{ vars.SSH_EXTRA_OPTIONS || '' }}
+          flush-cache: ${{ secrets[ format( '{0}_FLUSH_CACHE', env.ENV_PREFIX ) ] || vars[ format( '{0}_FLUSH_CACHE', env.ENV_PREFIX ) ] || secrets.FLUSH_CACHE || vars.FLUSH_CACHE || 'auto' }}
+          flush-cache-extra-params: ${{ secrets[ format( '{0}_FLUSH_CACHE_EXTRA', env.ENV_PREFIX ) ] || vars[ format( '{0}_FLUSH_CACHE_EXTRA', env.ENV_PREFIX ) ] || secrets.FLUSH_CACHE_EXTRA || vars.FLUSH_CACHE_EXTRA || '' }}
+          git-token: ${{ secrets.CI_BOT_TOKEN || secrets.github_token }}
+
+      - name: Push to GIT
+        if: ${{ env.deploy_method == 'git' }}
+        uses: saucal/action-bundle-push-to-git@v1
+          
+      - name: Webhook to ServiceApp
+        if: ${{ always() && env.queue_id != '' }}
+        run: | #TODO: Use tokens instead of SAPP_APP_X, see: #3
+          callback_payload=$(echo "{\"queue_id\": \"${{ env.queue_id }}\", \"action_url\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\", \"job_status\": \"${{ job.status }}\"}" | jq -c .)
+          curl -f -u "${{ secrets.SAPP_APP_USER }}:${{ secrets.SAPP_APP_PASS }}" -X POST 'https://${{ env.sapp_server }}/wp-json/serviceapp/v1/webhook/${{ env.action }}' -d $callback_payload -H 'Content-Type: application/json'
+
+      - name: Signal final status to slack
+        if: ${{ always() }}
+        uses: saucal/action-slack-notification@main
+        with:
+          final-status: "${{ job.status }}"
