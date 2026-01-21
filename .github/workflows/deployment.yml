@@ -80,7 +80,7 @@ jobs:
           ssh-extra-options: ${{ vars.SSH_EXTRA_OPTIONS || '' }}
           flush-cache: ${{ secrets[ format( '{0}_FLUSH_CACHE', env.ENV_PREFIX ) ] || vars[ format( '{0}_FLUSH_CACHE', env.ENV_PREFIX ) ] || secrets.FLUSH_CACHE || vars.FLUSH_CACHE || 'auto' }}
           flush-cache-extra-params: ${{ secrets[ format( '{0}_FLUSH_CACHE_EXTRA', env.ENV_PREFIX ) ] || vars[ format( '{0}_FLUSH_CACHE_EXTRA', env.ENV_PREFIX ) ] || secrets.FLUSH_CACHE_EXTRA || vars.FLUSH_CACHE_EXTRA || '' }}
-          git-token: ${{ secrets.CI_BOT_TOKEN || secrets.github_token }}
+          git-token: ${{ secrets.PUSH_TO_SSH_TOKEN || secrets.CI_BOT_TOKEN || secrets.github_token }}
 
       - name: Push to GIT
         if: ${{ env.deploy_method == 'git' }}
