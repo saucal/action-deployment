@@ -14,12 +14,6 @@ jobs:
     name: Check consistency from ${{ github.ref_name }}
     runs-on: ubuntu-latest
     concurrency: reusable-consistency-check-${{ github.ref_name }}
-    env:
-      action:      'consistency-check'
-      queue_id:    ${{ ( inputs.payload != '' && fromJson( inputs.payload ).queue_id ) || '' }}
-      sapp_server: ${{ vars.SAPP_SERVER || 'maintenance.saucal.com' }}
-      custom-secrets: ${{ secrets.custom-secrets || toJSON(secrets) }}
-      
     steps:
       - name: Prepare
         uses: saucal/action-bundle-prepare@v4
@@ -50,8 +44,3 @@ jobs:
           ssh-shell-params: ${{ vars.SSH_SHELL_PARAMS || '' }}
           ssh-extra-options: ${{ vars.SSH_EXTRA_OPTIONS || '' }}
 
-      - name: Webhook to ServiceApp
-        if: ${{ always() && env.queue_id != '' }}
-        run: | #TODO: Use tokens instead of SAPP_APP_X, see: #3
-          callback_payload=$(echo "{\"queue_id\": \"${{ env.queue_id }}\", \"action_url\":\"${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\", \"job_status\": \"${{ job.status }}\"}" | jq -c .)
-          curl -f -u "${{ fromJSON( env.custom-secrets ).SAPP_APP_USER }}:${{ fromJSON( env.custom-secrets ).SAPP_APP_PASS }}" -X POST 'https://${{ env.sapp_server }}/wp-json/serviceapp/v1/webhook/${{ env.action }}' -d $callback_payload -H 'Content-Type: application/json'
