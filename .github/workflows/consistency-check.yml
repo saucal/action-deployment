@@ -14,6 +14,9 @@ jobs:
     name: Check consistency from ${{ github.ref_name }}
     runs-on: ubuntu-latest
     concurrency: reusable-consistency-check-${{ github.ref_name }}
+    env:
+      custom-secrets: ${{ secrets.custom-secrets || toJSON(secrets) }}
+      
     steps:
       - name: Prepare
         uses: saucal/action-bundle-prepare@v4
