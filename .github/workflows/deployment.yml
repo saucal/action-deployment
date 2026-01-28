@@ -60,7 +60,7 @@ jobs:
 
       - name: Push to SSH
         if: ${{ env.deploy_method == 'ssh' }}
-        uses: saucal/action-bundle-push-to-ssh@v4
+        uses: saucal/action-bundle-push-to-ssh@qa
         env:
           ENV_PREFIX: ${{ ( ( github.ref_name == 'main' || github.ref_name == 'master' || github.ref_name == 'production' ) && 'PRODUCTION' ) || ( github.ref_name == 'preprod' && 'PREPROD' ) || ( ( github.ref_name == 'develop' || github.ref_name == 'staging' ) && 'STAGING' ) || format( 'ENV_{0}', github.ref_name ) }}
         with:
