@@ -60,7 +60,7 @@ jobs:
 
       - name: Push to SSH
         if: ${{ env.deploy_method == 'ssh' }}
-        uses: saucal/action-bundle-push-to-ssh@qa
+        uses: saucal/action-bundle-push-to-ssh@v4
         env:
           ENV_PREFIX: ${{ ( ( github.ref_name == 'main' || github.ref_name == 'master' || github.ref_name == 'production' ) && 'PRODUCTION' ) || ( github.ref_name == 'preprod' && 'PREPROD' ) || ( ( github.ref_name == 'develop' || github.ref_name == 'staging' ) && 'STAGING' ) || format( 'ENV_{0}', github.ref_name ) }}
         with:
@@ -81,7 +81,7 @@ jobs:
           ssh-extra-options: ${{ vars.SSH_EXTRA_OPTIONS || '' }}
           flush-cache: ${{ fromJSON( env.custom-secrets )[ format( '{0}_FLUSH_CACHE', env.ENV_PREFIX ) ] || vars[ format( '{0}_FLUSH_CACHE', env.ENV_PREFIX ) ] || fromJSON( env.custom-secrets ).FLUSH_CACHE || vars.FLUSH_CACHE || 'auto' }}
           flush-cache-extra-params: ${{ fromJSON( env.custom-secrets )[ format( '{0}_FLUSH_CACHE_EXTRA', env.ENV_PREFIX ) ] || vars[ format( '{0}_FLUSH_CACHE_EXTRA', env.ENV_PREFIX ) ] || fromJSON( env.custom-secrets ).FLUSH_CACHE_EXTRA || vars.FLUSH_CACHE_EXTRA || '' }}
-          git-token: ${{ fromJSON( env.custom-secrets ).PUSH_TO_SSH_TOKEN || fromJSON( env.custom-secrets ).CI_BOT_TOKEN || fromJSON( env.custom-secrets ).github_token }}
+          git-token: ${{ fromJSON( env.custom-secrets ).CI_BOT_TOKEN || fromJSON( env.custom-secrets ).github_token }}
 
       - name: Push to GIT
         if: ${{ env.deploy_method == 'git' }}
