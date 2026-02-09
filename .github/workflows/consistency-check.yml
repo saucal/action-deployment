@@ -6,13 +6,17 @@ on:
         default: ''
         required: false
         type: string
+      runner:
+        default: 'ubuntu-latest'
+        required: false
+        type: string
     secrets:
       custom-secrets:
         required: false
 jobs:
   deploy:
     name: Check consistency from ${{ github.ref_name }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     concurrency: reusable-consistency-check-${{ github.ref_name }}
     env:
       custom-secrets: ${{ secrets.custom-secrets || toJSON(secrets) }}
