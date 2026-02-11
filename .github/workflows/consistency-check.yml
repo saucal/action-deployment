@@ -22,11 +22,6 @@ jobs:
       custom-secrets: ${{ secrets.custom-secrets || toJSON(secrets) }}
       
     steps:
-      - name: Mask all secrets
-        run: |
-          for key in $(echo '${{ env.custom-secrets }}' | jq -r 'keys[]'); do
-            echo "::add-mask::$(echo '${{ env.custom-secrets }}' | jq -r --arg k "$key" '.[$k]')";
-          done
       - name: Prepare
         uses: saucal/action-bundle-prepare@v4
         with:
