@@ -10,7 +10,7 @@ on:
         default: 'ubuntu-latest'
         required: false
         type: string
-      custom-secrets:
+      secrets-file:
         default: ''
         required: false
         type: string
@@ -20,7 +20,8 @@ jobs:
     runs-on: ${{ inputs.runner }}
     concurrency: reusable-consistency-check-${{ github.ref_name }}
     env:
-      custom-secrets: ${{ inputs.custom-secrets || toJSON(secrets) }}
+      custom-secrets: ${{ inputs.secrets-file || toJSON(secrets) }}
+
       
     steps:
       - name: Prepare
