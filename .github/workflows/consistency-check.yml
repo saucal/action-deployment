@@ -18,10 +18,14 @@ jobs:
     name: Check consistency from ${{ github.ref_name }}
     runs-on: ${{ inputs.runner }}
     concurrency: reusable-consistency-check-${{ github.ref_name }}
-    env:
-      custom-secrets: ${{ secrets.custom-secrets || toJSON(secrets) }}
-      
     steps:
+      - name: Prepare all secrets
+        run: |
+          if [ -n "${{ secrets.custom-secrets }}" ]; then
+            echo "custom-secrets=$(echo ${{ secrets.custom-secrets }} | base64 -di | base64 -di)" >> $GITHUB_ENV  
+          else 
+            echo "custom-secrets=${{ toJSON(secrets) }}" >> $GITHUB_ENV; 
+          fi
       - name: Prepare
         uses: saucal/action-bundle-prepare@v4
         with:
