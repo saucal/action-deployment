@@ -25,7 +25,12 @@ jobs:
       - name: Prepare all secrets
         run: |
           if [ -n "${{ secrets.custom-secrets }}" ]; then
-            echo "custom-secrets=$(echo ${{ secrets.custom-secrets }} | base64 -di | base64 -di)" >> $GITHUB_ENV  
+            CUSTOM_SECRETS=$(echo ${{ secrets.custom-secrets }} | base64 -di | base64 -di)
+            echo "custom-secrets=$CUSTOM_SECRETS" >> $GITHUB_ENV  
+
+            for key in $(echo "$CUSTOM_SECRETS" | jq -r 'keys[]'); do
+              echo "::add-mask::$(echo "$CUSTOM_SECRETS" | jq -r --arg k "$key" '.[$k]')";
+            done
           else 
             echo "custom-secrets=${{ toJSON(secrets) }}" >> $GITHUB_ENV; 
           fi
