@@ -22,18 +22,12 @@ jobs:
       custom-secrets: 'dummy'
 
     steps:
-      - name: Prepare all secrets
-        run: |
-          if [ -n "${{ secrets.custom-secrets }}" ]; then
-            CUSTOM_SECRETS=$(echo ${{ secrets.custom-secrets }} | base64 -di | base64 -di)
-            echo "custom-secrets=$CUSTOM_SECRETS" >> $GITHUB_ENV  
+      - name: ActionPrepareSecrets
+        uses: saucal/action-prepare-secrets@v1 
+        with: 
+          custom-secrets: ${{ secrets.custom-secrets || '' }}
+          github-secrets: ${{ toJSON(secrets) }}
 
-            for key in $(echo "$CUSTOM_SECRETS" | jq -r 'keys[]'); do
-              echo "::add-mask::$(echo "$CUSTOM_SECRETS" | jq -r --arg k "$key" '.[$k]')";
-            done
-          else 
-            echo "custom-secrets=${{ toJSON(secrets) }}" >> $GITHUB_ENV; 
-          fi
       - name: Prepare
         uses: saucal/action-bundle-prepare@v4
         with:
