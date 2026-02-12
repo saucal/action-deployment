@@ -10,16 +10,17 @@ on:
         default: 'ubuntu-latest'
         required: false
         type: string
-    secrets:
       custom-secrets:
+        default: ''
         required: false
+        type: string
 jobs:
   deploy:
     name: Check consistency from ${{ github.ref_name }}
     runs-on: ${{ inputs.runner }}
     concurrency: reusable-consistency-check-${{ github.ref_name }}
     env:
-      custom-secrets: ${{ secrets.custom-secrets || toJSON(secrets) }}
+      custom-secrets: ${{ inputs.custom-secrets || toJSON(secrets) }}
       
     steps:
       - name: Prepare
