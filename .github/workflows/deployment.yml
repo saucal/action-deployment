@@ -26,9 +26,10 @@ on:
         default: 'ubuntu-latest'
         required: false
         type: string
-    secrets:
       custom-secrets:
-        required: false    
+        default: ''
+        required: false
+        type: string
 
 jobs:
   deploy:
@@ -38,7 +39,7 @@ jobs:
     concurrency: reusable-deployment-${{ github.ref_name }}
     env:
       deploy_method: ${{ inputs.deploy_method }}
-      custom-secrets: ${{ secrets.custom-secrets || toJSON(secrets) }}
+      custom-secrets: ${{ inputs.custom-secrets || toJSON(secrets) }}
       
     steps:
       - name: Prepare
