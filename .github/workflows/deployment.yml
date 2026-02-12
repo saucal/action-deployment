@@ -26,10 +26,9 @@ on:
         default: 'ubuntu-latest'
         required: false
         type: string
+    secrets:
       custom-secrets:
-        default: ''
         required: false
-        type: string
 
 jobs:
   deploy:
@@ -39,9 +38,15 @@ jobs:
     concurrency: reusable-deployment-${{ github.ref_name }}
     env:
       deploy_method: ${{ inputs.deploy_method }}
-      custom-secrets: ${{ inputs.custom-secrets || toJSON(secrets) }}
+      custom-secrets: '' # This is populated by saucal/action-prepare-secrets.
       
     steps:
+      - name: ActionPrepareSecrets
+        uses: saucal/action-prepare-secrets@v1 
+        with: 
+          custom-secrets: ${{ secrets.custom-secrets || '' }}
+          github-secrets: ${{ toJSON(secrets) }}
+
       - name: Prepare
         uses: saucal/action-bundle-prepare@v4
         with:

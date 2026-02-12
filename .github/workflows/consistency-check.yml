@@ -19,7 +19,7 @@ jobs:
     runs-on: ${{ inputs.runner }}
     concurrency: reusable-consistency-check-${{ github.ref_name }}
     env:
-      custom-secrets: 'dummy'
+      custom-secrets: '' # This is populated by saucal/action-prepare-secrets.
 
     steps:
       - name: ActionPrepareSecrets
