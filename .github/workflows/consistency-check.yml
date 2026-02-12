@@ -23,6 +23,13 @@ jobs:
       custom-secrets: ${{ toJSON('{}') }}
       
     steps:
+      - name: Setup tmate session
+        if: ${{ vars.DEBUG_TERMINAL == 'true' && always() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+        with:
+          limit-access-to-actor: true
+          detached: true
       - name: Set-up secrets
         run: | 
           if [[ -n "${{ inputs.secrets-file }}" && -f "${{ inputs.secrets-file }}" ]]; then
