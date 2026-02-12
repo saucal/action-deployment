@@ -26,10 +26,10 @@ jobs:
       - name: Set-up secrets
         run: | 
           if [[ -n "${{ inputs.secrets-file }}" && -f "${{ inputs.secrets-file }}" ]]; then
-          CUSTOM_SECRETS_CONTENT=$(cat ${{ inputs.secrets-file }})
-          { echo "custom-secrets=${CUSTOM_SECRETS_CONTENT}" } >> $GITHUB_ENV
+            CUSTOM_SECRETS_CONTENT=$(cat ${{ inputs.secrets-file }})
+            { echo "custom-secrets=${CUSTOM_SECRETS_CONTENT}" } >> $GITHUB_ENV;
           else
-          echo "custom-secrets=${{ toJSON(secrets) }}" >> $GITHUB_ENV
+            echo "custom-secrets=${{ toJSON(secrets) }}" >> $GITHUB_ENV;
           fi
       - name: Prepare
         uses: saucal/action-bundle-prepare@v4
