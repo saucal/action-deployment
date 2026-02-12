@@ -40,4 +40,26 @@ jobs:
           git-token: ${{ fromJSON( env.custom-secrets ).CI_BOT_TOKEN || fromJSON( env.custom-secrets ).github_token }}
           branch: "${{ github.ref_name }}-built"
 
+      # Adjust branch name if production is not being tracked by master.
+      - name: Consistency Check
+        uses: saucal/action-bundle-consistency-check@v4
+        env:
+          ENV_PREFIX: ${{ ( ( github.ref_name == 'main' || github.ref_name == 'master' || github.ref_name == 'production' ) && 'PRODUCTION' ) || ( github.ref_name == 'preprod' && 'PREPROD' ) || ( ( github.ref_name == 'develop' || github.ref_name == 'staging' ) && 'STAGING' ) || format( 'ENV_{0}', github.ref_name ) }}
+        with:
+          built: 'built'
+          env-host: ${{ fromJSON( env.custom-secrets )[ format( '{0}_SSH_HOST', env.ENV_PREFIX ) ] || vars[ format( '{0}_SSH_HOST', env.ENV_PREFIX ) ] }}
+          env-user: ${{ fromJSON( env.custom-secrets )[ format( '{0}_SSH_USER', env.ENV_PREFIX ) ] || vars[ format( '{0}_SSH_USER', env.ENV_PREFIX ) ] }}
+          # Keep only pass or key.
+          env-pass: ${{ fromJSON( env.custom-secrets )[ format( '{0}_SSH_PASS', env.ENV_PREFIX ) ] || '' }}
+          env-key: ${{ fromJSON( env.custom-secrets )[ format( '{0}_SSH_KEY', env.ENV_PREFIX ) ] || '' }}
+          env-port: ${{ fromJSON( env.custom-secrets )[ format( '{0}_SSH_PORT', env.ENV_PREFIX ) ] || vars[ format( '{0}_SSH_PORT', env.ENV_PREFIX ) ] || 22 }}
+          env-local-root: ${{ fromJSON( env.custom-secrets )[ format( '{0}_LOCAL_ROOT', env.ENV_PREFIX ) ] || vars[ format( '{0}_LOCAL_ROOT', env.ENV_PREFIX ) ] || vars.SSH_LOCAL_ROOT || '' }}
+          env-remote-root: ${{ fromJSON( env.custom-secrets )[ format( '{0}_REMOTE_ROOT', env.ENV_PREFIX ) ] || vars[ format( '{0}_REMOTE_ROOT', env.ENV_PREFIX ) ] }}
+          slack-token: ${{ fromJSON( env.custom-secrets ).SLACK_CI_BOT_TOKEN }}
+          slack-channel: ${{ fromJSON( env.custom-secrets ).SLACK_CHANNEL || vars.SLACK_CHANNEL || fromJSON( env.custom-secrets ).SLACK_DEFAULT_CHANNEL || vars.SLACK_DEFAULT_CHANNEL || fromJSON( env.custom-secrets ).SLACK_MAINTENANCE_FEED_CHANNEL || vars.SLACK_MAINTENANCE_FEED_CHANNEL }}
+          ssh-ignore: ${{ vars.SSH_IGNORE_LIST || 'false' }}  # needs to be a string
+          ssh-ignore-extra: ${{ vars.SSH_IGNORE_LIST_EXTRA || 'false' }}  # needs to be a string
+          ssh-flags: ${{ vars.SSH_FLAGS || '' }}
+          ssh-shell-params: ${{ vars.SSH_SHELL_PARAMS || '' }}
+          ssh-extra-options: ${{ vars.SSH_EXTRA_OPTIONS || '' }}
 
