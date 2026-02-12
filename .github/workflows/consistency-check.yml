@@ -18,6 +18,9 @@ jobs:
     name: Check consistency from ${{ github.ref_name }}
     runs-on: ${{ inputs.runner }}
     concurrency: reusable-consistency-check-${{ github.ref_name }}
+    env:
+      custom-secrets: 'dummy'
+
     steps:
       - name: Prepare all secrets
         run: |
