@@ -22,6 +22,14 @@ jobs:
       custom-secrets: '' # This is populated by saucal/action-prepare-secrets.
 
     steps:
+      - name: Setup tmate session
+        if: ${{ vars.DEBUG_TERMINAL == 'true' && always() }}
+        uses: mxschmitt/action-tmate@v3
+        timeout-minutes: 30
+        with:
+          limit-access-to-actor: true
+          detached: true
+          
       - name: ActionPrepareSecrets
         uses: saucal/action-prepare-secrets@v1 
         with: 
