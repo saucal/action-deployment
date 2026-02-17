@@ -55,6 +55,7 @@ jobs:
           git-token: ${{ fromJSON( env.custom-secrets ).CI_BOT_TOKEN || fromJSON( env.custom-secrets ).github_token }}
           repo: "${{ ( inputs.built_repo != '' && inputs.built_repo ) || 'current-built' }}"
           branch: "${{ ( inputs.built_branch != '' && inputs.built_branch ) || format( '{0}-built', github.ref_name ) }}"
+          add-mu-plugins: ${{ vars.ADD_MU_PLUGINS || 'auto' }}
           mu-plugins-branch: ${{ vars.MU_PLUGINS_BRANCH || 'v2' }}
           mu-plugins-loader-branch: ${{ vars.MU_PLUGINS_LOADER_BRANCH || 'v1' }}
           skip-permissions-sync: ${{ vars.SKIP_PERMISSIONS_SYNC || 'false' }}
