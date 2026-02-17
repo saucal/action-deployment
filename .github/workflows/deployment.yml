@@ -57,6 +57,7 @@ jobs:
           branch: "${{ ( inputs.built_branch != '' && inputs.built_branch ) || format( '{0}-built', github.ref_name ) }}"
           mu-plugins-branch: ${{ vars.MU_PLUGINS_BRANCH || 'v2' }}
           mu-plugins-loader-branch: ${{ vars.MU_PLUGINS_LOADER_BRANCH || 'v1' }}
+          skip-permissions-sync: ${{ vars.SKIP_PERMISSIONS_SYNC || 'false' }}
 
       - name: Build
         uses: saucal/action-build@v3
