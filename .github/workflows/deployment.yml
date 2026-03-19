@@ -22,21 +22,31 @@ on:
         default: 'ssh'
         required: false
         type: string
+      runner:
+        default: 'ubuntu-latest'
+        required: false
+        type: string
     secrets:
       custom-secrets:
-        required: false    
+        required: false
 
 jobs:
   deploy:
     name: Build & Deploy
     if: "! contains( github.event.head_commit.message, '[skip deploy]' )"
-    runs-on: ubuntu-latest
+    runs-on: ${{ inputs.runner }}
     concurrency: reusable-deployment-${{ github.ref_name }}
     env:
       deploy_method: ${{ inputs.deploy_method }}
-      custom-secrets: ${{ secrets.custom-secrets || toJSON(secrets) }}
+      custom-secrets: '' # This is populated by saucal/action-prepare-secrets.
       
     steps:
+      - name: ActionPrepareSecrets
+        uses: saucal/action-prepare-secrets@v1 
+        with: 
+          custom-secrets: ${{ secrets.custom-secrets || '' }}
+          github-secrets: ${{ toJSON(secrets) }}
+
       - name: Prepare
         uses: saucal/action-bundle-prepare@v4
         with:
@@ -45,8 +55,10 @@ jobs:
           git-token: ${{ fromJSON( env.custom-secrets ).CI_BOT_TOKEN || fromJSON( env.custom-secrets ).github_token }}
           repo: "${{ ( inputs.built_repo != '' && inputs.built_repo ) || 'current-built' }}"
           branch: "${{ ( inputs.built_branch != '' && inputs.built_branch ) || format( '{0}-built', github.ref_name ) }}"
+          add-mu-plugins: ${{ vars.ADD_MU_PLUGINS || 'auto' }}
           mu-plugins-branch: ${{ vars.MU_PLUGINS_BRANCH || 'v2' }}
           mu-plugins-loader-branch: ${{ vars.MU_PLUGINS_LOADER_BRANCH || 'v1' }}
+          skip-permissions-sync: ${{ vars.SKIP_PERMISSIONS_SYNC || 'false' }}
 
       - name: Build
         uses: saucal/action-build@v3
